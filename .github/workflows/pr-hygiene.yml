@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR intake standards
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const pullRequest = context.payload.pull_request;
@@ -118,8 +118,8 @@ jobs:
               const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:pr ${seedTokens.map((token) => `"${token}"`).join(" ")}`;
               const result = await github.graphql(
                 `
-                  query SearchPullRequests($query: String!) {
-                    search(query: $query, type: ISSUE, first: 10) {
+                  query SearchPullRequests($searchQuery: String!) {
+                    search(query: $searchQuery, type: ISSUE, first: 10) {
                       nodes {
                         ... on PullRequest {
                           number
@@ -132,7 +132,7 @@ jobs:
                     }
                   }
                 `,
-                { query: searchQuery },
+                { searchQuery },
               );
 
               duplicateCandidates = result.search.nodes
@@ -205,8 +205,8 @@ jobs:
   labeler:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/labeler@v5
+      - uses: actions/checkout@v6
+      - uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler.yml

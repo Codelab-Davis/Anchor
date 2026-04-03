@@ -1,70 +1,134 @@
-# PROJECT_NAME
+# Anchor
 
-PROJECT_DESCRIPTION
+Anchor is an early-stage, model-agnostic memory layer for AI agents.
 
-This repository was started from the Codelab open-source template and is intended to ship with a clean, GitHub-native foundation:
+It helps agents keep factual continuity across interactions by combining:
 
-- clear contributor and maintainer documentation
-- issue and pull request intake that reduces low-signal churn
-- deterministic issue assignment and PR reviewer routing
-- label automation and lightweight repository hygiene
-- security and governance defaults that are explicit without being heavy
+- a protocol-driven reasoning loop (`REMEMBER`, `CLARIFY`, `DONE`)
+- semantic retrieval from stored memory chunks
+- ingest-time question generation to improve recall
 
-## Getting started
+## How Anchor works
 
-1. Replace `PROJECT_NAME` and `PROJECT_DESCRIPTION` in this file.
-2. Replace `SECURITY_CONTACT_EMAIL` in [SECURITY.md](SECURITY.md) and [.github/ISSUE_TEMPLATE/config.yml](.github/ISSUE_TEMPLATE/config.yml).
-3. Replace placeholder maintainer handles in [.github/CODEOWNERS](.github/CODEOWNERS) and [.github/maintainers.yml](.github/maintainers.yml).
-4. Update [docs/vision.md](docs/vision.md) and [docs/roadmap.md](docs/roadmap.md) for the project.
-5. Extend [.github/dependabot.yml](.github/dependabot.yml) for the package ecosystems used by the project.
-6. Enable the repository settings listed in [docs/maintainers.md](docs/maintainers.md).
+At a high level:
 
-## What this repository includes
+1. Anchor receives a user query.
+2. It proactively decomposes the query into semantic retrieval queries.
+3. Retrieved memory is synthesized into compact context.
+4. The core model responds using protocol markers:
+   - `REMEMBER` when more memory lookup is needed
+   - `CLARIFY` when user intent is ambiguous
+   - `DONE` when the answer is complete
+5. Anchor loops until completion or a configured remember limit.
 
-- `README.md`: starter overview and setup guidance
-- `CONTRIBUTING.md`: contribution rules and local workflow expectations
-- `CODE_OF_CONDUCT.md`: participation standards
-- `SECURITY.md`: private disclosure path for vulnerabilities
-- `GOVERNANCE.md`: maintainer and decision-making model
-- `docs/`: maintainer-facing setup notes plus lightweight vision and roadmap docs
-- `.github/`: issue forms, PR template, labels, maintainer routing config, Dependabot, and GitHub Actions workflows
+## Current scope
 
-## Recommended repository layout
+- Python package with a low-level orchestrator API
+- Local-first workflows (for example Ollama + Chroma), but provider-agnostic by design
+- Official custom override pattern for teams that need to swap core components
+- Deterministic tests in CI and model evals run manually
 
-This template is intentionally language-agnostic. Pick a layout that fits the project and keep it consistent.
+Memory write-back and richer ingestion/UI workflows are planned next-stage work.
 
-- `src/`, `app/`, `apps/`, `packages/`, or `crates/` for code
-- `tests/` for automated tests when the ecosystem uses a dedicated test directory
-- `docs/` for roadmap, architecture, maintainer notes, and project decisions
-- `.github/` for repository automation and collaboration rules
-
-## Local documentation checks
-
-When editing repository docs or GitHub metadata, these are the first checks to run:
+## Prerequisites
 
 ```bash
+# Python environment + project tooling
+uv sync --group dev
+
+# Install local git hooks
+uv run pre-commit install
+```
+
+For local examples and evals, install and run Ollama:
+
+```bash
+# Install Ollama (macOS)
+brew install ollama
+
+# Start Ollama in a separate terminal
+ollama serve
+
+# Pull models used by examples/evals
+# examples/chat.py
+ollama pull qwen3:1.7b
+ollama pull bge-m3
+
+# examples/custom_anchor.py (default model)
+ollama pull qwen3:4b-instruct
+
+# tests/evals fixtures
+ollama pull qwen3:0.6b
+```
+
+For Linux and Windows install steps, use the official Ollama docs: <https://docs.ollama.com/>
+
+If you only run deterministic tests (`-m "not eval"`), Ollama is optional.
+
+## Quickstart
+
+```bash
+# Run the default chat example
+uv run python examples/chat.py
+```
+
+## Run examples
+
+```bash
+# Default integration path
+uv run python examples/chat.py
+
+# Official custom override pattern
+uv run python examples/custom_anchor.py
+```
+
+## Test commands
+
+```bash
+# Deterministic tests (CI path)
+uv run pytest -m "not eval"
+
+# Live model evals (manual)
+uv run pytest -m eval tests/evals
+```
+
+## Ollama process hygiene
+
+```bash
+# Show loaded/running models
+ollama ps
+
+# Stop a loaded model
+ollama stop qwen3:4b-instruct
+```
+
+If you started Ollama with `ollama serve`, stop it with `Ctrl+C` in that terminal.
+
+## Local quality checks
+
+```bash
+# Fork the repository on GitHub, then clone your fork.
+# Create a feature branch in your fork before running full hooks
+git checkout -b yourname/short-topic
+
+# Run hooks on all files
+uv run pre-commit run --all-files
+
+# Optional: docs/text whitespace checks
 git diff --check
 ```
 
-The checked-in GitHub Actions workflows also validate Markdown and links on pull requests and pushes to `main`.
+## Troubleshooting
 
-## Customization checklist
+- `no-commit-to-branch` failed:
+  This hook blocks direct commits to `main`. In your fork, create and commit on a feature branch, for example `git checkout -b yourname/short-topic`.
 
-Before calling a new repository ready, update:
+- `end-of-file-fixer` modified files:
+  Re-run `uv run pre-commit run --all-files` and commit the hook changes.
 
-- project name, summary, and status
-- `SECURITY_CONTACT_EMAIL`
-- maintainer list in `.github/CODEOWNERS`
-- maintainer routing in `.github/maintainers.yml`
-- package ecosystems in `.github/dependabot.yml`
-- label taxonomy in `.github/labels.json` if the project needs different categories
-- area mappings in `.github/labeler.yml`
-- any product-specific docs, commands, or release process details
+## Repository docs
 
-## Template principles
-
-- small diffs
-- explicit project policies
-- fast contributor onboarding
-- GitHub-native automation before custom infrastructure
-- language and framework neutrality until the project needs more
+- Contributor workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Maintainer operations: [docs/maintainers.md](docs/maintainers.md)
+- Security disclosure path: [SECURITY.md](SECURITY.md)
+- Project direction: [docs/vision.md](docs/vision.md), [docs/roadmap.md](docs/roadmap.md)

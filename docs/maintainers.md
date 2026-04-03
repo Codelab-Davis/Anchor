@@ -1,16 +1,14 @@
 # Maintainer Setup
 
-This repository template relies on several GitHub settings that cannot be expressed entirely through checked-in files.
+This repository relies on several GitHub settings that cannot be expressed entirely through checked-in files.
 
 ## Day 0 checklist
 
 Before accepting external contributions, complete these setup steps:
 
-- replace `PROJECT_NAME` and `PROJECT_DESCRIPTION` in `README.md`
-- replace `SECURITY_CONTACT_EMAIL` in `SECURITY.md` and `.github/ISSUE_TEMPLATE/config.yml`
-- replace placeholder handles in `.github/CODEOWNERS`
-- replace placeholder handles in `.github/maintainers.yml`
-- extend `.github/dependabot.yml` for the project stack
+- verify project metadata in `README.md` and `SECURITY.md` is current
+- verify handles in `.github/CODEOWNERS` and `.github/maintainers.yml` are current
+- verify `.github/dependabot.yml` covers the project stack
 - push the default branch once so GitHub Actions and label sync can initialize
 - verify that new issues receive an `area:*` label and assignee
 - verify that new pull requests receive labels and a requested reviewer
@@ -68,7 +66,8 @@ The canonical label set lives in `.github/labels.json`. Update that file and let
 
 ## Dependabot
 
-This template only enables updates for GitHub Actions by default. Add package ecosystems for the actual project stack in `.github/dependabot.yml`.
+This repository currently enables Dependabot updates for `uv` and GitHub Actions.
+Add additional ecosystems in `.github/dependabot.yml` if the stack expands.
 
 ## Optional later additions
 

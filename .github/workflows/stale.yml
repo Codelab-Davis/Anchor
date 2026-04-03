@@ -13,7 +13,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@v10
         with:
           stale-issue-message: "This issue has been quiet for a while. If it is still relevant, add context and it will stay open."
           stale-pr-message: "This pull request has been quiet for a while. If work is still active, leave a note and it will stay open."

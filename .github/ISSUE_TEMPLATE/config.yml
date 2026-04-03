@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security disclosure
-    url: mailto:SECURITY_CONTACT_EMAIL
+    url: mailto:codelabdavis@gmail.com
     about: Report suspected vulnerabilities privately instead of opening a public issue.

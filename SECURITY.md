@@ -1,14 +1,10 @@
 # Security Policy
 
-## Supported status
-
-This template assumes new projects will start in an early foundation phase. Security-sensitive fixes should be handled on the default branch until formal release branches exist.
-
 ## Reporting a vulnerability
 
 Do not file public issues for suspected vulnerabilities.
 
-Instead, report them privately to the maintainers at `SECURITY_CONTACT_EMAIL` with:
+Instead, report them privately to the maintainers at `codelabdavis@gmail.com` with:
 
 - a short summary
 - affected paths or commands
