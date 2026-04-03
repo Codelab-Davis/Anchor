@@ -40,6 +40,11 @@
     "description": "Repository maintenance or infrastructure work."
   },
   {
+    "name": "prompt",
+    "color": "5319E7",
+    "description": "Prompt design, prompt tuning, and prompt-quality discussion."
+  },
+  {
     "name": "needs: compliance",
     "color": "B60205",
     "description": "The author or reporter needs to fix template or policy gaps."
@@ -78,6 +83,21 @@
     "name": "status: needs-author-feedback",
     "color": "D4C5F9",
     "description": "Waiting on the author or reporter to provide more information."
+  },
+  {
+    "name": "status: ready-for-work",
+    "color": "0E8A16",
+    "description": "Triaged and ready for a contributor to claim."
+  },
+  {
+    "name": "status: in-progress",
+    "color": "FBCA04",
+    "description": "Claimed by a contributor and actively being worked."
+  },
+  {
+    "name": "status: awaiting-claimer-response",
+    "color": "D93F0B",
+    "description": "Waiting for the claimer to confirm continued work before auto-unclaim."
   },
   {
     "name": "status: duplicate",

@@ -16,23 +16,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Apply maintainer triage commands
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const body = (context.payload.comment.body || "").trim();
             const association = context.payload.comment.author_association || "NONE";
-            const allowedAssociations = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
-
-            if (!allowedAssociations.has(association)) {
-              core.info(`Ignoring triage command from ${association}.`);
-              return;
-            }
+            const maintainerAssociations = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+            const actor = context.payload.comment.user.login;
 
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issue = context.payload.issue;
             const issueNumber = issue.number;
             const isPullRequest = Boolean(issue.pull_request);
+            const labels = new Set((issue.labels || []).map((label) => label.name));
+            const assignees = (issue.assignees || []).map((assignee) => assignee.login);
 
             async function addLabels(labels) {
               if (!labels.length) {
@@ -96,6 +94,111 @@ jobs:
               return true;
             }
 
+            if (/^\/claim\s*$/i.test(body)) {
+              if (isPullRequest) {
+                core.setFailed("`/claim` can only be used on issues.");
+                return;
+              }
+
+              if (!labels.has("status: ready-for-work")) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: `@${actor} this issue is not ready to be claimed yet. A maintainer can mark it ready with \`/triaged\`.`,
+                });
+                return;
+              }
+
+              if (assignees.length > 0) {
+                await github.rest.issues.removeAssignees({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  assignees,
+                });
+              }
+
+              const claimed = await github.paginate(github.rest.issues.listForRepo, {
+                owner,
+                repo,
+                assignee: actor,
+                state: "open",
+                labels: "status: in-progress",
+                per_page: 100,
+              });
+              const otherClaims = claimed.filter((item) => item.number !== issueNumber && !item.pull_request);
+
+              if (otherClaims.length > 0) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: `@${actor} you already have a claimed issue (#${otherClaims[0].number}). Please unclaim or finish that one first.`,
+                });
+                return;
+              }
+
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: [actor],
+              });
+              await addLabels(["status: in-progress"]);
+              await removeLabels([
+                "status: ready-for-work",
+                "status: awaiting-claimer-response",
+                "status: needs-triage",
+                "status: needs-author-feedback",
+              ]);
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: `@${actor} claimed this issue. Thanks for taking it on.`,
+              });
+              return;
+            }
+
+            if (/^\/unclaim\s*$/i.test(body)) {
+              if (isPullRequest) {
+                core.setFailed("`/unclaim` can only be used on issues.");
+                return;
+              }
+
+              if (!assignees.includes(actor)) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: `@${actor} you are not the current claimer for this issue.`,
+                });
+                return;
+              }
+
+              await github.rest.issues.removeAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: [actor],
+              });
+              await addLabels(["status: ready-for-work"]);
+              await removeLabels(["status: in-progress", "status: awaiting-claimer-response"]);
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: `@${actor} unclaimed this issue. It is available again.`,
+              });
+              return;
+            }
+
+            if (!maintainerAssociations.has(association)) {
+              core.info(`Ignoring maintainer-only command from ${association}.`);
+              return;
+            }
+
             const duplicateMatch = body.match(/^\/duplicate\s+#(\d+)\s*$/i);
             if (duplicateMatch) {
               const canonicalNumber = Number(duplicateMatch[1]);
@@ -118,6 +221,9 @@ jobs:
                 "status: needs-triage",
                 "status: needs-author-feedback",
                 "status: superseded",
+                "status: ready-for-work",
+                "status: in-progress",
+                "status: awaiting-claimer-response",
               ]);
               await github.rest.issues.createComment({
                 owner,
@@ -158,6 +264,9 @@ jobs:
                 "status: needs-triage",
                 "status: needs-author-feedback",
                 "status: duplicate",
+                "status: ready-for-work",
+                "status: in-progress",
+                "status: awaiting-claimer-response",
               ]);
               await github.rest.issues.createComment({
                 owner,
@@ -175,6 +284,9 @@ jobs:
                 "status: needs-triage",
                 "status: duplicate",
                 "status: superseded",
+                "status: ready-for-work",
+                "status: in-progress",
+                "status: awaiting-claimer-response",
               ]);
               await github.rest.issues.createComment({
                 owner,
@@ -188,10 +300,15 @@ jobs:
             }
 
             if (/^\/triaged\s*$/i.test(body)) {
+              if (!isPullRequest) {
+                await addLabels(["status: ready-for-work"]);
+              }
               await removeLabels([
                 "needs: duplicate-review",
                 "status: needs-triage",
                 "status: needs-author-feedback",
+                "status: awaiting-claimer-response",
+                "status: in-progress",
               ]);
               return;
             }

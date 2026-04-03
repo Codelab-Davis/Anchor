@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check issue compliance, route triage, and suggest duplicates
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const issue = context.payload.issue;
@@ -49,6 +49,7 @@ jobs:
               {
                 prefix: "[bug]",
                 name: "bug report",
+                requiresArea: true,
                 sections: [
                   { heading: "Area" },
                   { heading: "Summary", placeholders: ["the project should..."] },
@@ -59,6 +60,7 @@ jobs:
               {
                 prefix: "[feature]",
                 name: "feature request",
+                requiresArea: true,
                 sections: [
                   { heading: "Area" },
                   { heading: "Problem", placeholders: ["today the workflow is painful because..."] },
@@ -68,10 +70,21 @@ jobs:
               {
                 prefix: "[task]",
                 name: "project task",
+                requiresArea: true,
                 sections: [
                   { heading: "Area" },
                   { heading: "Goal", placeholders: ["what should this task accomplish?"] },
                   { heading: "Definition of done", placeholders: ["how will maintainers know this task is complete?"] },
+                ],
+              },
+              {
+                prefix: "[prompt]",
+                name: "prompt improvement",
+                requiresArea: false,
+                sections: [
+                  { heading: "Prompt name" },
+                  { heading: "Problem", placeholders: ["query:", "model output (actual):", "expected behavior:"] },
+                  { heading: "Model & Setup", placeholders: ["model:", "temperature:", "anchor version / commit:"] },
                 ],
               },
             ];
@@ -264,7 +277,7 @@ jobs:
             let selectedAreaLabel = null;
 
             if (!template) {
-              complianceProblems.push("The issue title should start with `[bug]`, `[feature]`, or `[task]` so it matches one of the checked-in issue forms.");
+              complianceProblems.push("The issue title should start with `[bug]`, `[feature]`, `[task]`, or `[prompt]` so it matches one of the checked-in issue forms.");
             } else {
               for (const section of template.sections) {
                 const value = extractSection(issue.body || "", section.heading);
@@ -273,10 +286,12 @@ jobs:
                 }
               }
 
-              const areaValue = extractSection(issue.body || "", "Area");
-              selectedAreaLabel = areaMap.get((areaValue || "").toLowerCase()) || null;
-              if (!selectedAreaLabel) {
-                complianceProblems.push("`Area` must be one of Automation, Docs, Source, or Tests so triage automation can route the issue.");
+              if (template.requiresArea) {
+                const areaValue = extractSection(issue.body || "", "Area");
+                selectedAreaLabel = areaMap.get((areaValue || "").toLowerCase()) || null;
+                if (!selectedAreaLabel) {
+                  complianceProblems.push("`Area` must be one of Automation, Docs, Source, or Tests so triage automation can route the issue.");
+                }
               }
             }
 
@@ -287,8 +302,8 @@ jobs:
               const searchQuery = `repo:${owner}/${repo} ${seedTokens.map((token) => `"${token}"`).join(" ")}`;
               const result = await github.graphql(
                 `
-                  query SearchIssues($query: String!) {
-                    search(query: $query, type: ISSUE, first: 10) {
+                  query SearchIssues($searchQuery: String!) {
+                    search(query: $searchQuery, type: ISSUE, first: 10) {
                       nodes {
                         ... on Issue {
                           number
@@ -308,7 +323,7 @@ jobs:
                     }
                   }
                 `,
-                { query: searchQuery },
+                { searchQuery },
               );
 
               duplicateCandidates = result.search.nodes

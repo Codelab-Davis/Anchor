@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Welcome first-time issue reporters
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const owner = context.repo.owner;
@@ -30,13 +30,13 @@ jobs:
 
             const result = await github.graphql(
               `
-                query FirstIssueCount($query: String!) {
-                  search(query: $query, type: ISSUE, first: 1) {
+                query FirstIssueCount($searchQuery: String!) {
+                  search(query: $searchQuery, type: ISSUE, first: 1) {
                     issueCount
                   }
                 }
               `,
-              { query: `repo:${owner}/${repo} is:issue author:${login}` },
+              { searchQuery: `repo:${owner}/${repo} is:issue author:${login}` },
             );
 
             if (result.search.issueCount !== 1) {
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Welcome first-time pull request authors
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const owner = context.repo.owner;
@@ -72,13 +72,13 @@ jobs:
 
             const result = await github.graphql(
               `
-                query FirstPullRequestCount($query: String!) {
-                  search(query: $query, type: ISSUE, first: 1) {
+                query FirstPullRequestCount($searchQuery: String!) {
+                  search(query: $searchQuery, type: ISSUE, first: 1) {
                     issueCount
                   }
                 }
               `,
-              { query: `repo:${owner}/${repo} is:pr author:${login}` },
+              { searchQuery: `repo:${owner}/${repo} is:pr author:${login}` },
             );
 
             if (result.search.issueCount !== 1) {

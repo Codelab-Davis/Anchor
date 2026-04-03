@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anchor"
+version = "0.1.0"
+description = "Persistent memory layer for LLM applications."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = "MIT"
+authors = [{ name = "CodeLab at UC Davis" }]
+keywords = ["llm", "memory", "rag", "agents", "python"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    "chromadb>=1.5.5",
+    "ollama>=0.6.1",
+    "python-dotenv>=1.2.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/Codelab-Davis/Anchor"
+Repository = "https://github.com/Codelab-Davis/Anchor"
+Issues = "https://github.com/Codelab-Davis/Anchor/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pip-audit>=2.10.0",
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: deterministic tests intended for CI",
+    "eval: live model evaluation tests (deselect with '-m not eval')",
+]
+addopts = "-p no:cacheprovider"
+
+[tool.mypy]
+mypy_path = "src"
+packages = ["anchor"]

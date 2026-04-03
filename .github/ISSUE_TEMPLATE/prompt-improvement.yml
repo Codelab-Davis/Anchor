@@ -1,0 +1,68 @@
+name: Prompt improvement
+description: Suggest an improvement to a default prompt or retrieval injection message.
+title: "[PROMPT] "
+labels:
+  - "prompt"
+  - "help wanted"
+  - "status: needs-triage"
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched open and closed issues and pull requests and did not find a duplicate.
+          required: true
+  - type: input
+    id: prompt_name
+    attributes:
+      label: Prompt name
+      description: Name the prompt you want to improve (for example "Default system prompt", "Default decomposer").
+      placeholder: Default system prompt
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What failure mode are you seeing? Include query, model output, and expected behavior.
+      placeholder: |
+        Query:
+        <paste query here>
+
+        Model output (actual):
+        <paste model output>
+
+        Expected behavior:
+        <what should happen instead>
+    validations:
+      required: true
+  - type: textarea
+    id: model_setup
+    attributes:
+      label: Model & Setup
+      placeholder: |
+        Model:
+        Temperature:
+        Anchor version / commit:
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_fix
+    attributes:
+      label: Proposed Fix
+      description: Optional proposal for how to improve the prompt.
+  - type: textarea
+    id: eval_results
+    attributes:
+      label: Eval Results
+      description: Optional for issues; required in prompt-change PRs.
+      placeholder: |
+        Example format (placeholder):
+        Fill this in only if you already ran evals.
+
+        | Metric | Before | After |
+        | --- | --- | --- |
+        | <metric-name-1> | <value> | <value> |
+        | <metric-name-2> | <value> | <value> |
+        | <metric-name-3> | <value> | <value> |

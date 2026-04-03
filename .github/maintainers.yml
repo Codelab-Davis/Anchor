@@ -1,7 +1,5 @@
 triage_assignees:
-  - "@REPLACE_WITH_TRIAGE_MAINTAINER"
-  - "@REPLACE_WITH_TRIAGE_MAINTAINER_2"
+  - "@AlexanderGardiner"
 
 pr_reviewers:
-  - "@REPLACE_WITH_PR_REVIEWER"
-  - "@REPLACE_WITH_PR_REVIEWER_2"
+  - "@AlexanderGardiner"
