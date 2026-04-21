@@ -17,9 +17,14 @@ class _SpyStore(MemoryStore):
         self.query_calls.append((list(embedding), top_k))
         return list(self._results)
 
-    def add(self, id, text, embedding, metadata): ...  # noqa: E704
-    def delete(self, id): ...  # noqa: E704
-    def get(self, id): ...  # noqa: E704
+    def add(self, id, text, embedding, metadata):  # noqa: A002
+        raise NotImplementedError
+
+    def delete(self, id):  # noqa: A002
+        raise NotImplementedError
+
+    def get(self, id):  # noqa: A002
+        raise NotImplementedError
 
 
 @pytest.mark.unit
