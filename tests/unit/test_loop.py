@@ -23,6 +23,9 @@ def test_done_on_first_call() -> None:
     assert result.kind == "done"
     assert result.stop_reason == "done"
     assert result.content == "The answer is 42."
+    assert result.metadata["remember_count"] == 0
+    assert result.metadata["decomposed_queries"] == []
+    assert result.metadata["retrieval_scores"] == []
 
 
 @pytest.mark.unit
@@ -38,6 +41,9 @@ def test_single_remember_then_done() -> None:
     assert result.kind == "done"
     assert result.stop_reason == "done"
     assert result.content == "The answer is X."
+    assert result.metadata["remember_count"] == 1
+    assert result.metadata["decomposed_queries"] == ["what is X?", "query about X"]
+    assert result.metadata["retrieval_scores"] == []
 
 
 @pytest.mark.unit
@@ -54,6 +60,14 @@ def test_two_remembers_then_done() -> None:
     assert result.kind == "done"
     assert result.stop_reason == "done"
     assert result.content == "The final answer."
+    assert result.metadata["remember_count"] == 2
+    assert result.metadata["decomposed_queries"] == [
+        "what is X?",
+        "query about X",
+        "what is Y?",
+        "query about Y",
+    ]
+    assert result.metadata["retrieval_scores"] == []
 
 
 @pytest.mark.unit
@@ -63,6 +77,9 @@ def test_clarify_path() -> None:
     assert result.kind == "ask"
     assert result.stop_reason == "ask"
     assert "Which format do you want?" in result.content
+    assert result.metadata["remember_count"] == 0
+    assert result.metadata["decomposed_queries"] == []
+    assert result.metadata["retrieval_scores"] == []
 
 
 @pytest.mark.unit
@@ -72,6 +89,9 @@ def test_no_marker_error_path() -> None:
     result = anchor.run("What is this?")
     assert result.kind == "done"
     assert result.stop_reason == "error"
+    assert result.metadata["remember_count"] == 0
+    assert result.metadata["decomposed_queries"] == []
+    assert result.metadata["retrieval_scores"] == []
 
 
 @pytest.mark.unit
@@ -89,3 +109,8 @@ def test_max_remembers_guard() -> None:
     result = anchor.run("Something that requires many lookups.")
     assert result.kind == "done"
     assert result.stop_reason == "max_remembers"
+    # remembers increments to 3 before the early-exit check fires
+    assert result.metadata["remember_count"] == 3
+    # decompose is only called for cycles 1 and 2; cycle 3 exits before reaching decompose
+    assert result.metadata["decomposed_queries"] == ["gap1", "query1", "gap2", "query2"]
+    assert result.metadata["retrieval_scores"] == []

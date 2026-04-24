@@ -28,7 +28,15 @@ class Loop:
     def run(self, query: str) -> RunResult:
         max_remembers = getattr(self.anchor, "MAX_REMEMBERS", 10)
         remembers = 0
-        retrieved_items = []
+        retrieved_items: list[dict] = []
+        all_decomposed_queries: list[str] = []
+
+        def _metadata() -> dict[str, object]:
+            return {
+                "remember_count": remembers,
+                "decomposed_queries": list(all_decomposed_queries),
+                "retrieval_scores": [c["score"] for c in retrieved_items],
+            }
 
         messages = [
             {"role": "system", "content": self.anchor.system_prompt()},
@@ -40,6 +48,7 @@ class Loop:
             proactive_queries = self.anchor.decompose(
                 query, context=query, retrieved=None, history=messages[1:]
             )
+            all_decomposed_queries.extend(proactive_queries)
             seen_ids = set()
             proactive_chunks = []
             for q in proactive_queries:
@@ -74,6 +83,7 @@ class Loop:
                     content=final,
                     stop_reason="done",
                     retrieved_items=retrieved_items,
+                    metadata=_metadata(),
                 )
 
             elif content.endswith(self.anchor.REMEMBER_MARKER):
@@ -86,6 +96,7 @@ class Loop:
                         ),
                         stop_reason="max_remembers",
                         retrieved_items=retrieved_items,
+                        metadata=_metadata(),
                     )
 
                 gap, context = self._extract_gap(content)
@@ -96,6 +107,7 @@ class Loop:
                     retrieved=retrieved_items,
                     history=messages[1:],
                 )
+                all_decomposed_queries.extend(queries)
 
                 chunks = []
                 if self.anchor.retriever:
@@ -122,6 +134,7 @@ class Loop:
                     content=self._strip_marker(content, self.anchor.CLARIFY_MARKER),
                     stop_reason="ask",
                     retrieved_items=retrieved_items,
+                    metadata=_metadata(),
                 )
 
             else:
@@ -130,4 +143,5 @@ class Loop:
                     content=content,
                     stop_reason="error",
                     retrieved_items=retrieved_items,
+                    metadata=_metadata(),
                 )
