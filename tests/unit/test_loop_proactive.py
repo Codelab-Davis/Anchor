@@ -3,14 +3,14 @@ from __future__ import annotations
 import pytest
 
 from anchor.anchor import Anchor
-from tests.unit_harness import FakeMemoryStore, scripted_model
+from tests.unit_harness import FakeMemoryStore, ScriptedModel, scripted_model
 
 
 def _make_anchor_with_memory(
     ai_responses: list[str],
     light_ai_responses: list[str],
     store: FakeMemoryStore,
-) -> tuple[Anchor, object, object]:
+) -> tuple[Anchor, ScriptedModel, ScriptedModel]:
     ai_model = scripted_model(*ai_responses)
     light_model = scripted_model(*light_ai_responses)
     anchor = Anchor(
@@ -39,7 +39,9 @@ def test_proactive_chunks_inject_memory_message() -> None:
     result = anchor.run("Tell me about X.")
 
     first_call = ai_model.calls[0]
-    assert len(first_call) == 3, "expected system + user query + [MEMORY RETRIEVAL RESULT]"
+    assert (
+        len(first_call) == 3
+    ), "expected system + user query + [MEMORY RETRIEVAL RESULT]"
     assert first_call[1] == {"role": "user", "content": "Tell me about X."}
     assert first_call[2]["role"] == "user"
     assert "[MEMORY RETRIEVAL RESULT]" in first_call[2]["content"]
@@ -62,7 +64,9 @@ def test_proactive_no_chunks_no_message_injected() -> None:
     result = anchor.run("Tell me about X.")
 
     first_call = ai_model.calls[0]
-    assert len(first_call) == 2, "expected only system + user query; no retrieval injection"
+    assert (
+        len(first_call) == 2
+    ), "expected only system + user query; no retrieval injection"
     assert first_call[0]["role"] == "system"
     assert first_call[1] == {"role": "user", "content": "Tell me about X."}
 
@@ -82,11 +86,15 @@ def test_proactive_skipped_when_no_retriever_configured() -> None:
     result = anchor.run("Tell me about X.")
 
     first_call = ai_model.calls[0]
-    assert len(first_call) == 2, "expected only system + user query; no retrieval injection"
+    assert (
+        len(first_call) == 2
+    ), "expected only system + user query; no retrieval injection"
     assert first_call[0]["role"] == "system"
     assert first_call[1]["role"] == "user"
 
-    assert len(light_model.calls) == 0, "decomposer must not be called when no retriever"
+    assert (
+        len(light_model.calls) == 0
+    ), "decomposer must not be called when no retriever"
     assert result.metadata["decomposed_queries"] == []
     assert result.metadata["retrieval_scores"] == []
 
@@ -101,14 +109,14 @@ def test_proactive_chunk_ids_not_readded_during_remember() -> None:
     # Both return the same chunk to exercise the dedup logic.
     store = FakeMemoryStore(query_results=[[chunk], [chunk]])
 
-    anchor, ai_model, _light = _make_anchor_with_memory(
+    anchor, _ai_model, _light = _make_anchor_with_memory(
         ai_responses=[
             "GAP: what is X?\nCONTEXT: investigating\nREMEMBER",
             "Final answer.\nDONE",
         ],
         light_ai_responses=[
             "Tell me about X.",  # proactive decompose: single query matching the gap
-            "what is X?",        # REMEMBER decompose: single query matching the gap
+            "what is X?",  # REMEMBER decompose: single query matching the gap
         ],
         store=store,
     )
