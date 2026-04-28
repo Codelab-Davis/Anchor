@@ -67,9 +67,14 @@ If you only run deterministic tests (`-m "not eval"`), Ollama is optional.
 
 ## Quickstart
 
+Use `ChromaMemoryStore` for quick demos (in-memory) and `PersistentChromaMemoryStore` when memory should persist across restarts.
+
 ```bash
-# Run the default chat example
+# In-memory store (does NOT persist)
 uv run python examples/chat.py
+
+# Persistent store (recommended for real use)
+uv run python examples/persistent_chat.py
 ```
 
 ## Run examples
