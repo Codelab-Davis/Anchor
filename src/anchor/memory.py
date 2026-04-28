@@ -98,3 +98,13 @@ class ChromaMemoryStore(MemoryStore):
             "content": docs[0] if docs else "",
             "metadata": metas[0] if metas else {},
         }
+
+
+class PersistentChromaMemoryStore(ChromaMemoryStore):
+    """Persistent ChromaDB implementation of MemoryStore."""
+
+    def __init__(self, path: str, collection_name: str = "anchor"):
+        import chromadb
+
+        self.chroma = chromadb.PersistentClient(path=path)
+        self.collection = self.chroma.get_or_create_collection(collection_name)
