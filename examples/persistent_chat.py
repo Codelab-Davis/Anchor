@@ -9,9 +9,9 @@
 #     where memory should NOT survive process restart.
 #   - PersistentChromaMemoryStore (on-disk): real deployments, long-running
 #     agents, and any case where ingested memory should persist across runs.
+from pathlib import Path
 import ollama as _ollama
-from anchor import Anchor
-from anchor.memory import PersistentChromaMemoryStore
+from anchor import Anchor, PersistentChromaMemoryStore
 
 
 class OllamaFn:
@@ -41,6 +41,9 @@ SEED_CHUNKS = [
     ("Tenant COBALT has a payout holdback of 4 percent.", "seed"),
 ]
 
+MEMORY_PATH = Path(".anchor/memory")
+SEED_MARKER = MEMORY_PATH / ".persistent_chat_seeded_v1"
+
 
 def main():
     ai = OllamaFn("qwen3:1.7b")
@@ -48,7 +51,7 @@ def main():
     embed_fn = OllamaEmbedFn()
 
     # Memory persists at this path across process restarts.
-    memory_store = PersistentChromaMemoryStore(path=".anchor/memory")
+    memory_store = PersistentChromaMemoryStore(path=str(MEMORY_PATH))
 
     anchor = Anchor(
         ai_fn=ai,
@@ -57,15 +60,25 @@ def main():
         embed_fn=embed_fn,
     )
 
-    print("Ingesting seed chunks...")
-    for text, source in SEED_CHUNKS:
-        chunk_id = anchor.ingest_text(text, source=source)
-        print(f"  ingested [{source}]: {text[:60]} -> {chunk_id}")
-    print()
+    if not SEED_MARKER.exists():
+        print("Ingesting seed chunks...")
+        for text, source in SEED_CHUNKS:
+            chunk_id = anchor.ingest_text(text, source=source)
+            print(f"  ingested [{source}]: {text[:60]} -> {chunk_id}")
+
+        SEED_MARKER.parent.mkdir(parents=True, exist_ok=True)
+        SEED_MARKER.write_text("ok\n", encoding="utf-8")
+        print()
+    else:
+        print("Seed chunks already present; skipping ingest.\n")
 
     print("Chat with Anchor. Type 'exit' to quit.\n")
     while True:
-        query = input("You> ").strip()
+        try:
+            query = input("You> ").strip()
+        except EOFError:
+            print()
+            break
         if not query or query.lower() == "exit":
             break
         result = anchor.run(query)
