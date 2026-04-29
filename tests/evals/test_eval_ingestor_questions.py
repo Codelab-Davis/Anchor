@@ -17,9 +17,7 @@ CHUNK_TEXT = (
 # Deliberately shares no literal terms with CHUNK_TEXT — bridges via semantics only.
 # "created / iconic / iron landmark / international exhibition / France"
 # vs "architect / Gustave Eiffel / designed / World's Fair / Paris"
-PARAPHRASE_QUERY = (
-    "Who created the iconic iron landmark built for the international exhibition in France?"
-)
+PARAPHRASE_QUERY = "Who created the iconic iron landmark built for the international exhibition in France?"
 
 DISTRACTOR_CHUNKS = [
     "The Python programming language was created by Guido van Rossum in 1991.",
@@ -32,10 +30,13 @@ DISTRACTOR_CHUNKS = [
 def test_eval_ingestor_question_recall(light_ai_fn, embed_fn):
     name_q = f"eval_ingestor_q_{uuid.uuid4().hex}"
     name_base = f"eval_ingestor_base_{uuid.uuid4().hex}"
-    store_q = ChromaMemoryStore(collection_name=name_q)
-    store_base = ChromaMemoryStore(collection_name=name_base)
+    store_q = store_base = None
     try:
-        ingestor_q = Ingestor(memory_store=store_q, embed_fn=embed_fn, question_fn=light_ai_fn)
+        store_q = ChromaMemoryStore(collection_name=name_q)
+        store_base = ChromaMemoryStore(collection_name=name_base)
+        ingestor_q = Ingestor(
+            memory_store=store_q, embed_fn=embed_fn, question_fn=light_ai_fn
+        )
         ingestor_base = Ingestor(memory_store=store_base, embed_fn=embed_fn)
 
         for distractor in DISTRACTOR_CHUNKS:
@@ -49,9 +50,9 @@ def test_eval_ingestor_question_recall(light_ai_fn, embed_fn):
         stored = store_q.get(chunk_id_q)
         assert stored is not None
         questions = stored["metadata"].get("questions", "")
-        assert questions and questions.strip(), (
-            f"Expected generated questions in metadata, got: {questions!r}"
-        )
+        assert (
+            questions and questions.strip()
+        ), f"Expected generated questions in metadata, got: {questions!r}"
 
         # Query the question-enhanced store with all chunks visible.
         n_chunks = len(DISTRACTOR_CHUNKS) + 1
@@ -66,9 +67,11 @@ def test_eval_ingestor_question_recall(light_ai_fn, embed_fn):
         )
 
         # Assert question-enhanced chunk ranks first.
-        assert results_q[0]["id"] == chunk_id_q, (
-            f"Expected target chunk to rank first, got: {[r['id'] for r in results_q]}"
-        )
+        assert (
+            results_q[0]["id"] == chunk_id_q
+        ), f"Expected target chunk to rank first, got: {[r['id'] for r in results_q]}"
     finally:
-        store_q.chroma.delete_collection(name_q)
-        store_base.chroma.delete_collection(name_base)
+        if store_q is not None:
+            store_q.chroma.delete_collection(name_q)
+        if store_base is not None:
+            store_base.chroma.delete_collection(name_base)
