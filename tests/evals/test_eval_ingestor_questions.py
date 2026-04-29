@@ -59,6 +59,12 @@ def test_eval_ingestor_question_recall(light_ai_fn, embed_fn):
         query_embedding = embed_fn(PARAPHRASE_QUERY)
         results_q = store_q.query(query_embedding, top_k=n_chunks)
 
+        # This eval validates recall on a paraphrase query with zero literal term overlap,
+        # but does not assert a score improvement over a baseline. bge-m3's semantic
+        # embeddings are strong enough that question augmentation does not reliably reduce
+        # L2 distance with only a handful of chunks. The benefit of question augmentation
+        # is expected to be more pronounced with many similar chunks and edge-case queries.
+
         # Assert target chunk is in the top half of results for the question-enhanced store.
         top_ids = [r["id"] for r in results_q[: n_chunks // 2 + 1]]
         assert chunk_id_q in top_ids, (
