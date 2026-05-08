@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-    "chromadb>=1.5.8",
+    "chromadb>=1.5.9",
     "ollama>=0.6.2",
     "python-dotenv>=1.2.2",
 ]
