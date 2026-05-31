@@ -87,6 +87,41 @@ uv run python examples/chat.py
 uv run python examples/custom_anchor.py
 ```
 
+## Run logging
+
+Pass `log_path` to `Anchor` to write a structured JSONL file tracing every step of a run.
+Each line is a JSON object with an `event` field.
+
+```python
+from anchor import Anchor
+
+anchor = Anchor(
+    ai_fn=my_ai,
+    light_ai_fn=my_light_ai,
+    memory_store=store,
+    embed_fn=embed,
+    log_path="logs/run.jsonl",   # str or pathlib.Path
+)
+result = anchor.run("What is the capital of France?")
+```
+
+Events written in order:
+
+| Event | Fields | When |
+|---|---|---|
+| `run_start` | `query` | Always, before retrieval |
+| `proactive_queries` | `queries` | When a retriever is configured |
+| `proactive_chunks` | `chunks` (`id`, `source`, `score`) | When a retriever is configured |
+| `remember_gap` | `gap`, `context` | Each `REMEMBER` cycle |
+| `remember_queries` | `queries` | Each `REMEMBER` cycle |
+| `remember_chunks` | `chunks` (`id`, `source`, `score`) | Each `REMEMBER` cycle |
+| `stop` | `stop_reason` | Always, as the last event |
+
+`stop_reason` matches `RunResult.stop_reason`: `done`, `ask`, `max_remembers`, or `error`.
+
+Each call to `anchor.run()` truncates and rewrites the file from scratch.
+Omitting `log_path` (the default) writes nothing and leaves behavior unchanged.
+
 ## Test commands
 
 ```bash

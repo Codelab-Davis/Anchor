@@ -60,6 +60,7 @@ class Anchor(ABC):
         memory_store=None,
         embed_fn=None,
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
+        log_path=None,
     ):
         from anchor.loop import Loop
         from anchor.synthesizer import Synthesizer
@@ -81,6 +82,7 @@ class Anchor(ABC):
         )
         self._loop = Loop(self)
         self._system_prompt = system_prompt
+        self.log_path = log_path
 
     def ai(self, messages: list[dict]) -> str:
         return self._ai_fn(messages)
@@ -108,7 +110,7 @@ class Anchor(ABC):
         return self.Markers.DONE.value
 
     def config(self) -> AnchorConfig:
-        return AnchorConfig(max_remembers=self.MAX_REMEMBERS)
+        return AnchorConfig(max_remembers=self.MAX_REMEMBERS, log_path=self.log_path)
 
     def ingest_text(self, text: str, source: str = "user") -> str:
         if not self.ingestor:
