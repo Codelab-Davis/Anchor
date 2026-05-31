@@ -104,7 +104,11 @@ def test_logging_remember_cycle(tmp_path) -> None:
     ]
 
     assert events[0]["query"] == "Tell me about X."
-    assert events[1] == {"event": "remember_gap", "gap": "what is X?", "context": "figuring out X"}
+    assert events[1] == {
+        "event": "remember_gap",
+        "gap": "what is X?",
+        "context": "figuring out X",
+    }
     assert events[2]["queries"] == ["what is X?", "query about X"]
     assert events[3] == {"event": "remember_chunks", "chunks": []}
     assert events[4]["stop_reason"] == "done"

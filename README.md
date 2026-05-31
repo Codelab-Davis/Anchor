@@ -108,7 +108,7 @@ result = anchor.run("What is the capital of France?")
 Events written in order:
 
 | Event | Fields | When |
-|---|---|---|
+| --- | --- | --- |
 | `run_start` | `query` | Always, before retrieval |
 | `proactive_queries` | `queries` | When a retriever is configured |
 | `proactive_chunks` | `chunks` (`id`, `source`, `score`) | When a retriever is configured |
