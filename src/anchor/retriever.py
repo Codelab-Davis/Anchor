@@ -14,4 +14,9 @@ class Retriever:
             raise RuntimeError("No embedding function provided to Retriever.")
         embedding = self.embed_fn(query)
         chunks = self.memory_store.query(embedding, top_k=top_k)
+        for chunk in chunks:
+            if "id" not in chunk:
+                raise ValueError(
+                    f"MemoryStore.query returned a chunk without an 'id' field: {chunk!r}"
+                )
         return chunks

@@ -115,6 +115,51 @@ def test_logging_remember_cycle(tmp_path) -> None:
 
 
 @pytest.mark.unit
+def test_logging_max_remembers_path(tmp_path) -> None:
+    log_file = tmp_path / "run.jsonl"
+    anchor = _make_anchor(
+        ai_responses=[
+            "GAP: what is X?\nCONTEXT: first attempt\nREMEMBER",
+            "GAP: still missing\nCONTEXT: second attempt\nREMEMBER",
+        ],
+        light_ai_responses=["query about X"],  # only cycle 1 calls decompose
+        log_path=log_file,
+    )
+    anchor.MAX_REMEMBERS = 1
+    result = anchor.run("Tell me about X.")
+
+    assert result.stop_reason == "max_remembers"
+
+    events = _events(log_file)
+    event_names = [e["event"] for e in events]
+    assert event_names == [
+        "run_start",
+        "remember_gap",
+        "remember_queries",
+        "remember_chunks",
+        "stop",
+    ]
+    assert events[-1] == {"event": "stop", "stop_reason": "max_remembers"}
+
+
+@pytest.mark.unit
+def test_logging_ask_path(tmp_path) -> None:
+    log_file = tmp_path / "run.jsonl"
+    anchor = _make_anchor(
+        ai_responses=["QUESTION: Which format do you want?\nCLARIFY"],
+        log_path=log_file,
+    )
+    result = anchor.run("Process the data.")
+
+    assert result.stop_reason == "ask"
+
+    events = _events(log_file)
+    event_names = [e["event"] for e in events]
+    assert event_names == ["run_start", "stop"]
+    assert events[-1] == {"event": "stop", "stop_reason": "ask"}
+
+
+@pytest.mark.unit
 def test_no_file_written_when_log_path_none(tmp_path) -> None:
     anchor = _make_anchor(["The answer is 42.\nDONE"])
     result = anchor.run("What is the answer?")

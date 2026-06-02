@@ -37,14 +37,20 @@ class Loop:
         _raw_log_path = getattr(self.anchor, "log_path", None)
         _log_path = Path(_raw_log_path) if _raw_log_path is not None else None
         if _log_path is not None:
-            _log_path.parent.mkdir(parents=True, exist_ok=True)
-            _log_path.write_text("")
+            try:
+                _log_path.parent.mkdir(parents=True, exist_ok=True)
+                _log_path.write_text("", encoding="utf-8")
+            except Exception:
+                _log_path = None
 
         def _log(event: str, **data) -> None:
             if _log_path is None:
                 return
-            with _log_path.open("a") as f:
-                f.write(json.dumps({"event": event, **data}) + "\n")
+            try:
+                with _log_path.open("a", encoding="utf-8") as f:
+                    f.write(json.dumps({"event": event, **data}) + "\n")
+            except Exception:
+                pass
 
         def _chunk_summary(chunks: list[dict]) -> list[dict]:
             return [
