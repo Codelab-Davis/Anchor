@@ -105,7 +105,7 @@ class Loop:
             content = response.strip()
 
             if content.endswith(
-                self.anchor.DONE_MARKER or self.anchor.DONE_MARKER + "."
+                (self.anchor.DONE_MARKER, self.anchor.DONE_MARKER + ".")
             ):
                 final = self._strip_marker(content, self.anchor.DONE_MARKER)
                 # new_memory = self.anchor.assess(query, final, retrieved_items)
