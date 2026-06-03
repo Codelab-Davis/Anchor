@@ -78,7 +78,9 @@ def test_multi_chunk_with_multiple_questions_only_last_is_marked_current() -> No
 
 
 @pytest.mark.unit
-def test_multi_chunk_without_questions_prompt_contains_chunk_content_and_sources() -> None:
+def test_multi_chunk_without_questions_prompt_contains_chunk_content_and_sources() -> (
+    None
+):
     model_fn, calls = _spy_model()
     chunks = [
         {"source": "src_A", "content": "content alpha"},

@@ -74,3 +74,11 @@ def test_retrieve_raises_without_embed_fn() -> None:
 
     with pytest.raises(RuntimeError, match="No embedding function"):
         Retriever(store, None).retrieve("query")
+
+
+@pytest.mark.unit
+def test_retrieve_raises_on_chunk_missing_id() -> None:
+    store = _SpyStore([{"content": "no id here", "score": 0.5}])
+
+    with pytest.raises(ValueError, match="'id'"):
+        Retriever(store, lambda _: [0.0]).retrieve("q")

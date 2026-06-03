@@ -1,4 +1,6 @@
 from __future__ import annotations
+import json
+from pathlib import Path
 from anchor.runresult import RunResult
 
 
@@ -31,6 +33,31 @@ class Loop:
         retrieved_items: list[dict] = []
         all_decomposed_queries: list[str] = []
 
+        # Logging setup: truncate/create the file once, then append per event.
+        _raw_log_path = getattr(self.anchor, "log_path", None)
+        _log_path = Path(_raw_log_path) if _raw_log_path is not None else None
+        if _log_path is not None:
+            try:
+                _log_path.parent.mkdir(parents=True, exist_ok=True)
+                _log_path.write_text("", encoding="utf-8")
+            except Exception:
+                _log_path = None
+
+        def _log(event: str, **data) -> None:
+            if _log_path is None:
+                return
+            try:
+                with _log_path.open("a", encoding="utf-8") as f:
+                    f.write(json.dumps({"event": event, **data}) + "\n")
+            except Exception:
+                pass
+
+        def _chunk_summary(chunks: list[dict]) -> list[dict]:
+            return [
+                {"id": c["id"], "source": c.get("source"), "score": c.get("score")}
+                for c in chunks
+            ]
+
         def _metadata() -> dict[str, object]:
             return {
                 "remember_count": remembers,
@@ -43,12 +70,16 @@ class Loop:
             {"role": "user", "content": query},
         ]
 
+        _log("run_start", query=query)
+
         if self.anchor.retriever:
             # Pass conversation history (excluding system prompt)
             proactive_queries = self.anchor.decompose(
                 query, context=query, retrieved=None, history=messages[1:]
             )
             all_decomposed_queries.extend(proactive_queries)
+            _log("proactive_queries", queries=proactive_queries)
+
             seen_ids = set()
             proactive_chunks = []
             for q in proactive_queries:
@@ -56,6 +87,8 @@ class Loop:
                     if chunk["id"] not in seen_ids:
                         seen_ids.add(chunk["id"])
                         proactive_chunks.append(chunk)
+            _log("proactive_chunks", chunks=_chunk_summary(proactive_chunks))
+
             if proactive_chunks:
                 retrieved_items.extend(proactive_chunks)
                 synthesis = self.anchor.synthesize(proactive_chunks, [query])
@@ -72,12 +105,13 @@ class Loop:
             content = response.strip()
 
             if content.endswith(
-                self.anchor.DONE_MARKER or self.anchor.DONE_MARKER + "."
+                (self.anchor.DONE_MARKER, self.anchor.DONE_MARKER + ".")
             ):
                 final = self._strip_marker(content, self.anchor.DONE_MARKER)
                 # new_memory = self.anchor.assess(query, final, retrieved_items)
                 # if new_memory and self.anchor.ingestor:
                 #     self.anchor.ingest_text(new_memory, source="agent_reasoning")
+                _log("stop", stop_reason="done")
                 return RunResult(
                     kind="done",
                     content=final,
@@ -89,6 +123,7 @@ class Loop:
             elif content.endswith(self.anchor.REMEMBER_MARKER):
                 remembers += 1
                 if remembers > max_remembers:
+                    _log("stop", stop_reason="max_remembers")
                     return RunResult(
                         kind="done",
                         content=self._strip_marker(
@@ -100,6 +135,8 @@ class Loop:
                     )
 
                 gap, context = self._extract_gap(content)
+                _log("remember_gap", gap=gap, context=context)
+
                 # Pass conversation history (excluding system prompt)
                 queries = self.anchor.decompose(
                     gap,
@@ -108,6 +145,7 @@ class Loop:
                     history=messages[1:],
                 )
                 all_decomposed_queries.extend(queries)
+                _log("remember_queries", queries=queries)
 
                 chunks = []
                 if self.anchor.retriever:
@@ -118,6 +156,7 @@ class Loop:
                                 seen_ids.add(chunk["id"])
                                 chunks.append(chunk)
                     retrieved_items.extend(chunks)
+                _log("remember_chunks", chunks=_chunk_summary(chunks))
 
                 synthesis_chunks = chunks if chunks else retrieved_items
                 synthesis = self.anchor.synthesize(synthesis_chunks, [query])
@@ -129,6 +168,7 @@ class Loop:
                 )
 
             elif content.endswith(self.anchor.CLARIFY_MARKER):
+                _log("stop", stop_reason="ask")
                 return RunResult(
                     kind="ask",
                     content=self._strip_marker(content, self.anchor.CLARIFY_MARKER),
@@ -138,6 +178,7 @@ class Loop:
                 )
 
             else:
+                _log("stop", stop_reason="error")
                 return RunResult(
                     kind="done",
                     content=content,
