@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from anchor.decomposer import Decomposer
@@ -25,8 +27,13 @@ _RETRIEVED = [
     },
 ]
 
-# Named entities absent from _GAP, _CONTEXT, and _RETRIEVED.
-_ABSENT_ENTITIES = ("Falcon-9", "Starlink", "SpaceX", "Tesla", "Crew Dragon")
+
+def _named_tokens(text: str) -> set[str]:
+    """Return lowercased capitalized tokens (≥2 chars) as named-entity proxies."""
+    return {
+        m.group().lower()
+        for m in re.finditer(r"\b[A-Z][A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\b", text)
+    }
 
 
 @pytest.mark.eval
@@ -35,16 +42,18 @@ def test_eval_decomposer_no_retrieval(light_ai_fn, run_number):
     decomposer = Decomposer(model_fn=light_ai_fn)
     queries = decomposer.decompose(_GAP)
 
-    assert len(queries) >= 2, (
-        f"[run {run_number}] expected at least 2 queries, got {len(queries)}: {queries!r}"
-    )
-    assert queries[0] == _GAP, (
-        f"[run {run_number}] gap must be first query, got {queries[0]!r}"
-    )
-    for entity in _ABSENT_ENTITIES:
-        for q in queries:
-            assert entity.lower() not in q.lower(), (
-                f"[run {run_number}] query references absent entity {entity!r}: {q!r}"
+    assert (
+        len(queries) >= 2
+    ), f"[run {run_number}] expected at least 2 queries, got {len(queries)}: {queries!r}"
+    assert (
+        queries[0] == _GAP
+    ), f"[run {run_number}] gap must be first query, got {queries[0]!r}"
+    allowed_text = _GAP.lower()
+    for q in queries:
+        for entity in _named_tokens(q):
+            assert entity in allowed_text, (
+                f"[run {run_number}] query {q!r} contains entity {entity!r} "
+                f"not present in gap {_GAP!r}"
             )
 
 
@@ -61,15 +70,24 @@ def test_eval_decomposer_retrieval_aware(light_ai_fn, run_number):
         f"nr={nr_queries!r} ra={ra_queries!r}"
     )
 
-    for entity in _ABSENT_ENTITIES:
-        for q in ra_queries:
-            assert entity.lower() not in q.lower(), (
-                f"[run {run_number}] retrieval-aware query references absent entity "
-                f"{entity!r}: {q!r}"
+    allowed_text = " ".join(
+        [
+            _GAP,
+            _CONTEXT,
+            *[r["content"] for r in _RETRIEVED],
+            *[r["questions"] for r in _RETRIEVED],
+        ]
+    ).lower()
+    for q in ra_queries:
+        for entity in _named_tokens(q):
+            assert entity in allowed_text, (
+                f"[run {run_number}] retrieval-aware query {q!r} contains entity "
+                f"{entity!r} not present in gap, context, or retrieved entries"
             )
 
-    retrieved_contents = {r["content"].lower() for r in _RETRIEVED}
+    retrieved_contents = [r["content"].lower() for r in _RETRIEVED]
     for q in ra_queries:
-        assert q.lower() not in retrieved_contents, (
-            f"[run {run_number}] query duplicates a retrieved fact verbatim: {q!r}"
+        assert not any(q.lower() in content for content in retrieved_contents), (
+            f"[run {run_number}] query {q!r} is a substring of a retrieved fact: "
+            f"ra_queries={ra_queries!r} retrieved_contents={retrieved_contents!r}"
         )
