@@ -1,3 +1,15 @@
+"""Eval: proactive retrieval surfaces the right chunk before the model's first turn.
+
+Requires Ollama running locally with three models pulled:
+  ollama pull qwen3:4b-instruct   # ai_fn
+  ollama pull qwen3:0.6b          # light_ai_fn (decomposer / synthesizer)
+  ollama pull bge-m3              # embed_fn
+
+Start Ollama: ``ollama serve``
+
+Run these tests: ``pytest -m eval``
+"""
+
 from __future__ import annotations
 
 import uuid
@@ -49,8 +61,12 @@ def _seed_store(embed_fn) -> tuple[ChromaMemoryStore, str, dict[str, str]]:
     store = ChromaMemoryStore(collection_name=name)
     ingestor = Ingestor(memory_store=store, embed_fn=embed_fn)
     ids: dict[str, str] = {}
-    for key, text in CHUNKS.items():
-        ids[key] = ingestor.ingest(text, source="test")
+    try:
+        for key, text in CHUNKS.items():
+            ids[key] = ingestor.ingest(text, source="test")
+    except Exception:
+        store.chroma.delete_collection(name)
+        raise
     return store, name, ids
 
 
