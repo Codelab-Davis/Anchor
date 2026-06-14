@@ -14,7 +14,7 @@ def detect_format(path: str | Path) -> str:
     suffix = Path(path).suffix.lower()
     try:
         return _EXT_MAP[suffix]
-    except KeyError:
+    except KeyError as err:
         raise ValueError(
             f"Unsupported file extension {suffix!r}: cannot detect format for {path!r}"
-        )
+        ) from err

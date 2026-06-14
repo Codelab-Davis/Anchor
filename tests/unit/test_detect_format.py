@@ -58,5 +58,5 @@ def test_unknown_extension_raises_value_error() -> None:
 
 @pytest.mark.unit
 def test_no_extension_raises_value_error() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"Unsupported file extension"):
         detect_format("Makefile")
