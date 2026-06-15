@@ -1,0 +1,3 @@
+Anchor is a personal AI assistant designed to help users capture and retrieve knowledge.
+It stores information as vector embeddings in a memory store.
+Users can query the assistant to find relevant facts from previous conversations.
