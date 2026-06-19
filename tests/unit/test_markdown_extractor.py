@@ -172,6 +172,7 @@ def test_fenced_code_block_content_preserved_verbatim(tmp_path: Path) -> None:
     )
     assert len(docs) == 1
     content = docs[0].content
+    assert "```python" in content
     assert "def foo():" in content
     assert "    pass" in content  # 4-space indentation must survive
 
@@ -191,6 +192,7 @@ def test_fenced_code_block_without_heading(tmp_path: Path) -> None:
     )
     assert len(docs) == 1
     content = docs[0].content
+    assert "```" in content
     assert "plain block" in content
     assert "    indented line" in content
 
@@ -210,6 +212,23 @@ def test_fenced_code_with_multiline_body(tmp_path: Path) -> None:
         """,
     )
     content = docs[0].content
+    assert "```python" in content
     assert "x = 1" in content
     assert "y = 2" in content
     assert "z = x + y" in content
+
+
+# ---------------------------------------------------------------------------
+# file extension variants
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_markdown_extension_is_extracted(tmp_path: Path) -> None:
+    md_file = tmp_path / "guide.markdown"
+    md_file.write_text("# Title\n\nContent.\n", encoding="utf-8")
+    docs = MarkdownExtractor().extract(md_file)
+    assert len(docs) == 1
+    assert docs[0].source_format == "markdown"
+    assert docs[0].metadata["heading"] == "# Title"
+    assert docs[0].source == str(md_file)

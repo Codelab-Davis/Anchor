@@ -31,8 +31,9 @@ def _tokens_to_text(tokens: list[dict]) -> str:
         if t == "blank_line":
             continue
         elif t == "block_code":
+            marker = tok.get("marker", "```")
             lang = (tok.get("attrs") or {}).get("info") or ""
-            parts.append(f"```{lang}\n{tok['raw']}```")
+            parts.append(f"{marker}{lang}\n{tok['raw']}{marker}")
         elif t == "paragraph":
             parts.append(_inline_text(tok.get("children", [])))
         elif t == "heading":
