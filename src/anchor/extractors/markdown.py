@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -41,6 +42,11 @@ def _tokens_to_text(tokens: list[dict]) -> str:
             parts.append("#" * level + " " + _inline_text(tok.get("children", [])))
         elif "raw" in tok:
             parts.append(tok["raw"])
+        else:
+            warnings.warn(
+                f"Unhandled markdown token type '{t}' has no 'raw' field; content may be lost",
+                stacklevel=2,
+            )
     return "\n\n".join(p for p in parts if p)
 
 

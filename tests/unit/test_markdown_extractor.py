@@ -223,6 +223,19 @@ def test_fenced_code_with_multiline_body(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# unhandled token warning
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_unhandled_token_type_emits_warning(tmp_path: Path) -> None:
+    # mistune tokenizes a Markdown list as type='list' with no top-level 'raw'
+    # field, so _tokens_to_text hits the else branch and should warn.
+    with pytest.warns(UserWarning, match=r"'list'"):
+        run_extract(tmp_path, "- item one\n- item two\n")
+
+
 @pytest.mark.unit
 def test_markdown_extension_is_extracted(tmp_path: Path) -> None:
     md_file = tmp_path / "guide.markdown"

@@ -27,7 +27,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ingestion = ["mistune>=3.0"]
+ingestion = [
+    "mistune>=3.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Codelab-Davis/Anchor"
