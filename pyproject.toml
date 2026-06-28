@@ -26,6 +26,11 @@ dependencies = [
     "python-dotenv>=1.2.2",
 ]
 
+[project.optional-dependencies]
+ingestion = [
+    "mistune>=3.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/Codelab-Davis/Anchor"
 Repository = "https://github.com/Codelab-Davis/Anchor"
