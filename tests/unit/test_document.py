@@ -63,6 +63,28 @@ def test_metadata_nested_dict_raises() -> None:
 
 
 @pytest.mark.unit
+def test_metadata_none_container_raises() -> None:
+    with pytest.raises(ValueError, match="metadata must be a dict"):
+        NormalizedDocument(
+            content="text",
+            source="file.txt",
+            source_format="text",
+            metadata=None,
+        )
+
+
+@pytest.mark.unit
+def test_metadata_non_str_key_raises() -> None:
+    with pytest.raises(ValueError, match="metadata keys must be str"):
+        NormalizedDocument(
+            content="text",
+            source="file.txt",
+            source_format="text",
+            metadata={1: "value"},
+        )
+
+
+@pytest.mark.unit
 def test_metadata_all_valid_scalar_types() -> None:
     doc = NormalizedDocument(
         content="text",
