@@ -1,11 +1,3 @@
-from __future__ import annotations
+from anchor.document import NormalizedDocument
 
-from dataclasses import dataclass, field
-
-
-@dataclass
-class NormalizedDocument:
-    content: str
-    source: str
-    source_format: str
-    metadata: dict = field(default_factory=dict)
+__all__ = ["NormalizedDocument"]
