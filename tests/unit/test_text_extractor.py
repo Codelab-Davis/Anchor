@@ -4,10 +4,11 @@ from pathlib import Path
 
 import pytest
 
+from anchor.extractors import NormalizedDocument
 from anchor.extractors.text import TextExtractor
 
 
-def run_extract(tmp_path: Path, content: str):
+def run_extract(tmp_path: Path, content: str) -> tuple[NormalizedDocument, Path]:
     text_file = tmp_path / "sample.txt"
     text_file.write_text(content, encoding="utf-8")
     return TextExtractor().extract(text_file), text_file
