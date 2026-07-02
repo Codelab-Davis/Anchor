@@ -88,6 +88,7 @@ class MarkdownExtractor:
 
         docs: list[NormalizedDocument] = []
         for section in sections:
+            metadata: dict[str, str | int | float | bool]
             if section.heading_token is not None:
                 content_tokens = [section.heading_token] + section.body_tokens
                 metadata = {"heading": _heading_label(section.heading_token)}

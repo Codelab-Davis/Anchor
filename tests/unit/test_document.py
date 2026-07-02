@@ -36,7 +36,7 @@ def test_metadata_none_raises() -> None:
             content="text",
             source="file.txt",
             source_format="text",
-            metadata={"key": None},
+            metadata={"key": None},  # type: ignore[dict-item]
         )
 
 
@@ -47,7 +47,7 @@ def test_metadata_list_raises() -> None:
             content="text",
             source="file.txt",
             source_format="text",
-            metadata={"tags": ["a", "b"]},
+            metadata={"tags": ["a", "b"]},  # type: ignore[dict-item]
         )
 
 
@@ -58,7 +58,7 @@ def test_metadata_nested_dict_raises() -> None:
             content="text",
             source="file.txt",
             source_format="text",
-            metadata={"nested": {"inner": "value"}},
+            metadata={"nested": {"inner": "value"}},  # type: ignore[dict-item]
         )
 
 
@@ -69,7 +69,7 @@ def test_metadata_none_container_raises() -> None:
             content="text",
             source="file.txt",
             source_format="text",
-            metadata=None,
+            metadata=None,  # type: ignore[arg-type]
         )
 
 
@@ -80,7 +80,7 @@ def test_metadata_non_str_key_raises() -> None:
             content="text",
             source="file.txt",
             source_format="text",
-            metadata={1: "value"},
+            metadata={1: "value"},  # type: ignore[dict-item]
         )
 
 
