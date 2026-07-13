@@ -1,8 +1,12 @@
 from __future__ import annotations
 from abc import ABC
 from enum import Enum
+from pathlib import Path
 from anchor.config import AnchorConfig
 from anchor.runresult import RunResult
+from anchor.extractors.detect import detect_format
+from anchor.extractors.text import TextExtractor
+from anchor.extractors.markdown import MarkdownExtractor
 
 
 DEFAULT_SYSTEM_PROMPT = """\
@@ -116,6 +120,19 @@ class Anchor(ABC):
         if not self.ingestor:
             raise RuntimeError("No memory store configured.")
         return self.ingestor.ingest(text, source=source)
+
+    def ingest_file(self, path: str | Path) -> list[str]:
+        format_name = detect_format(path)
+
+        if format_name == "text":
+            documents = [TextExtractor().extract(path)]
+        else:
+            documents = MarkdownExtractor().extract(path)
+
+        return [
+            self.ingest_text(document.content, source=document.source)
+            for document in documents
+        ]
 
     def decompose(
         self,
