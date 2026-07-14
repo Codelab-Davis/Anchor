@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from anchor import Anchor
-from tests.unit_harness import FakeMemoryStore, deterministic_embedding
+from tests.unit_harness import FakeMemoryStore, deterministic_embedding, scripted_model
 
 
 def _dummy_ai(_messages: list[dict]) -> str:
@@ -31,6 +31,9 @@ def test_ingest_file_txt_returns_single_chunk_id(tmp_path: Path) -> None:
 
     assert isinstance(chunk_ids, list)
     assert len(chunk_ids) == 1
+    assert anchor.ingestor is not None
+    assert anchor.ingestor.memory_store is not None
+    assert isinstance(anchor.ingestor.memory_store, FakeMemoryStore)
     assert chunk_ids[0] in anchor.ingestor.memory_store.items
 
 
@@ -49,6 +52,9 @@ def test_ingest_file_md_with_multiple_sections_returns_multiple_chunk_ids(
 
     assert len(chunk_ids) == 2
     assert len(set(chunk_ids)) == 2
+    assert anchor.ingestor is not None
+    assert anchor.ingestor.memory_store is not None
+    assert isinstance(anchor.ingestor.memory_store, FakeMemoryStore)
     for chunk_id in chunk_ids:
         assert chunk_id in anchor.ingestor.memory_store.items
 
@@ -64,9 +70,25 @@ def test_ingest_file_unsupported_extension_raises_value_error(tmp_path: Path) ->
 
 
 @pytest.mark.unit
+def test_ingest_file_without_memory_store_raises_runtime_error(tmp_path: Path) -> None:
+    anchor = Anchor(
+        ai_fn=scripted_model(),
+        light_ai_fn=scripted_model(),
+    )
+    file_path = tmp_path / "notes.txt"
+    file_path.write_text("Plain text content.", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="No memory store configured"):
+        anchor.ingest_file(file_path)
+
+
+@pytest.mark.unit
 def test_ingest_text_still_works() -> None:
     anchor = _make_anchor()
 
     chunk_id = anchor.ingest_text("hello world", source="user")
 
+    assert anchor.ingestor is not None
+    assert anchor.ingestor.memory_store is not None
+    assert isinstance(anchor.ingestor.memory_store, FakeMemoryStore)
     assert chunk_id in anchor.ingestor.memory_store.items

@@ -122,6 +122,9 @@ class Anchor(ABC):
         return self.ingestor.ingest(text, source=source)
 
     def ingest_file(self, path: str | Path) -> list[str]:
+        if not self.ingestor:
+            raise RuntimeError("No memory store configured.")
+
         format_name = detect_format(path)
 
         if format_name == "text":
