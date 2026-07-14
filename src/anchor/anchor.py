@@ -137,6 +137,22 @@ class Anchor(ABC):
             for document in documents
         ]
 
+    def ingest_directory(self, path: str | Path) -> list[str]:
+        if not self.ingestor:
+            raise RuntimeError("No memory store configured.")
+
+        chunk_ids: list[str] = []
+        for file_path in sorted(Path(path).rglob("*")):
+            if not file_path.is_file():
+                continue
+            try:
+                detect_format(file_path)
+            except ValueError:
+                continue
+            chunk_ids.extend(self.ingest_file(file_path))
+
+        return chunk_ids
+
     def decompose(
         self,
         gap: str,
