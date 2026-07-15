@@ -31,6 +31,18 @@ These fields are included when the source format and extraction pipeline can sup
 | `line_end` | `int` | One-based line number of the chunk's last line in the extracted source text. |
 | `chunk_count` | `int` | Total number of chunks produced from this source document in the same ingest run. |
 
+## Source path convention
+
+`source` is populated differently depending on the ingestion path.
+
+**File ingestion.** `Anchor.ingest_file`, `Anchor.ingest_directory`, and the extractors (`TextExtractor`, `MarkdownExtractor`, `PythonExtractor`) set `source` to the absolute path of the file, computed as `str(Path(path).resolve())`. This holds regardless of whether the caller passed a relative or absolute path, and regardless of the working directory at ingest time, so chunks can always be traced back to their source file consistently.
+
+**Low-level text ingestion.** `Anchor.ingest_text` takes `source` as a caller-provided string with no convention enforced. It can be a file path, a URL, a document title, or any other stable identifier — whatever makes sense for the caller's use case.
+
+These two conventions differ intentionally. File ingestion needs a machine-stable reference that resolves the same way no matter where the ingest was run from. Text ingestion is a lower-level entry point where the caller may not have a filesystem path at all, so it needs the flexibility to supply its own identifier.
+
+This convention applies to newly ingested content only. Existing stored chunks are not migrated and may still contain relative paths or other pre-convention `source` values.
+
 ## Examples
 
 ### Markdown
