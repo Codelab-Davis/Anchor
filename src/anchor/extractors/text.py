@@ -14,7 +14,7 @@ class TextExtractor:
 
         return NormalizedDocument(
             content=content,
-            source=str(path),
+            source=str(Path(path).resolve()),
             source_format="text",
             metadata={
                 "line_start": 1,

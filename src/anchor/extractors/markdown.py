@@ -103,7 +103,7 @@ class MarkdownExtractor:
             docs.append(
                 NormalizedDocument(
                     content=content,
-                    source=str(path),
+                    source=str(Path(path).resolve()),
                     source_format="markdown",
                     metadata=metadata,
                 )

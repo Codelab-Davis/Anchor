@@ -31,13 +31,25 @@ These fields are included when the source format and extraction pipeline can sup
 | `line_end` | `int` | One-based line number of the chunk's last line in the extracted source text. |
 | `chunk_count` | `int` | Total number of chunks produced from this source document in the same ingest run. |
 
+## Source path convention
+
+`source` is populated differently depending on the ingestion path.
+
+**File ingestion.** `Anchor.ingest_file`, `Anchor.ingest_directory`, `TextExtractor`, and `MarkdownExtractor` set `source` to the absolute path of the file, computed as `str(Path(path).resolve())`. This normalizes both relative and absolute inputs to an absolute path, so a `source` value is always machine-stable *within a single ingest call*. Note that `Path.resolve()` resolves relative paths against the current working directory at the moment it runs — ingesting the same relative path from two different working directories can produce two different absolute paths. Callers that need identical `source` values across ingest runs from varying working directories should pass an absolute path in, rather than relying on `resolve()` to normalize a relative one for them. (`PythonExtractor` produces code-derived chunks, which are out of scope for this document per the introduction, and does not currently follow this convention.)
+
+**Low-level text ingestion.** `Anchor.ingest_text` takes `source` as a caller-provided string with no convention enforced. It can be a file path, a URL, a document title, or any other stable identifier — whatever makes sense for the caller's use case.
+
+These two conventions differ intentionally. File ingestion needs a machine-stable, absolute reference rather than whatever relative or partial path the caller happened to pass in. Text ingestion is a lower-level entry point where the caller may not have a filesystem path at all, so it needs the flexibility to supply its own identifier.
+
+This convention applies to newly ingested content only. Existing stored chunks are not migrated and may still contain relative paths or other pre-convention `source` values.
+
 ## Examples
 
 ### Markdown
 
 ```python
 {
-    "source": "docs/setup.md",
+    "source": "/home/user/anchor/docs/setup.md",
     "source_format": "markdown",
     "chunk_index": 2,
     "char_start": 412,
@@ -56,7 +68,7 @@ These fields are included when the source format and extraction pipeline can sup
 
 ```python
 {
-    "source": "reports/q1-summary.pdf",
+    "source": "/home/user/anchor/reports/q1-summary.pdf",
     "source_format": "pdf",
     "chunk_index": 5,
     "char_start": 1024,
@@ -75,7 +87,7 @@ These fields are included when the source format and extraction pipeline can sup
 
 ```python
 {
-    "source": "notes/meeting-2026-05-30.txt",
+    "source": "/home/user/anchor/notes/meeting-2026-05-30.txt",
     "source_format": "text",
     "chunk_index": 0,
     "char_start": 0,
@@ -130,6 +142,6 @@ These fields are not used by the retriever or synthesizer today. They are includ
 
 **Stability of `chunk_index` across re-ingest.** If the chunking strategy or source document changes, `chunk_index` and character offsets from a prior ingest are no longer valid. There is currently no mechanism to detect or reconcile stale chunks.
 
-**Open: `source` as path vs. URI.** The schema does not specify whether `source` should be an absolute path, a path relative to the project root, or a URI. The current `Ingestor` passes whatever string the caller supplies. A convention should be established before shipping multi-user or multi-machine ingestion.
+**Resolved: `source` as path vs. URI.** See [Source path convention](#source-path-convention) above — file ingestion uses an absolute path (`str(Path(path).resolve())`); `ingest_text` accepts a caller-supplied identifier of any form. This applies to newly ingested content only; existing stored chunks are not migrated.
 
 **Open: schema versioning.** There is no version or schema field on chunk metadata. If the required field set changes, there is no way to distinguish old chunks from new ones at retrieval time. Adding a `schema_version` field (for example `"schema_version": 1`) would allow callers to handle both old and new chunks during a migration window.
