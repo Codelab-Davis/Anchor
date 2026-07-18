@@ -328,7 +328,7 @@ def test_ingest_raises_value_error_for_invalid_metadata_value(
         memory_store=store, embed_fn=RecordingEmbedFn(), question_fn=None
     )
 
-    with pytest.raises(ValueError, match=list(invalid_metadata.keys())[0]):
+    with pytest.raises(ValueError, match=next(iter(invalid_metadata))):
         ingestor.ingest("data", metadata=invalid_metadata)
 
     # Nothing should have been written on failure.

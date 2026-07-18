@@ -24,6 +24,8 @@ class Ingestor:
 
         if metadata:
             for key, value in metadata.items():
+                if not isinstance(key, str):
+                    raise ValueError(f"Invalid metadata key {key!r}: keys must be str")
                 if not isinstance(value, (str, int, float, bool)):
                     raise ValueError(
                         f"Invalid metadata value for key {key!r}: must be "
