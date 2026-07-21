@@ -232,3 +232,104 @@ def test_ingest_timestamp_is_iso_format_and_utc() -> None:
     assert parsed.utcoffset() == timezone.utc.utcoffset(None)
     # Must fall within the window during which ingest() ran.
     assert before <= parsed <= after
+
+
+# ---------------------------------------------------------------------------
+# metadata passthrough (#75)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_ingest_stores_caller_metadata_alongside_required_fields() -> None:
+    store = FakeMemoryStore()
+    ingestor = Ingestor(
+        memory_store=store, embed_fn=RecordingEmbedFn(), question_fn=None
+    )
+
+    chunk_id = ingestor.ingest(
+        "data", metadata={"author": "alice", "priority": 1, "verified": True}
+    )
+
+    metadata = store.items[chunk_id]["metadata"]
+    assert metadata["author"] == "alice"
+    assert metadata["priority"] == 1
+    assert metadata["verified"] is True
+    # Required fields are still present.
+    assert set(metadata.keys()) >= {
+        "source",
+        "questions",
+        "timestamp",
+        "author",
+        "priority",
+        "verified",
+    }
+
+
+@pytest.mark.unit
+def test_ingest_caller_metadata_does_not_override_required_fields() -> None:
+    store = FakeMemoryStore()
+    ingestor = Ingestor(
+        memory_store=store, embed_fn=RecordingEmbedFn(), question_fn=None
+    )
+
+    chunk_id = ingestor.ingest(
+        "data",
+        source="docs",
+        metadata={
+            "source": "attacker-controlled",
+            "questions": "attacker-controlled",
+            "timestamp": "attacker-controlled",
+        },
+    )
+
+    metadata = store.items[chunk_id]["metadata"]
+    assert metadata["source"] == "docs"
+    assert metadata["questions"] == ""
+    assert metadata["timestamp"] != "attacker-controlled"
+    parsed = datetime.fromisoformat(metadata["timestamp"])
+    assert parsed.tzinfo is not None
+
+
+@pytest.mark.unit
+def test_ingest_metadata_none_behaves_like_no_metadata() -> None:
+    store_a = FakeMemoryStore()
+    store_b = FakeMemoryStore()
+    ingestor_a = Ingestor(
+        memory_store=store_a, embed_fn=RecordingEmbedFn(), question_fn=None
+    )
+    ingestor_b = Ingestor(
+        memory_store=store_b, embed_fn=RecordingEmbedFn(), question_fn=None
+    )
+
+    chunk_id_a = ingestor_a.ingest("data", source="docs")
+    chunk_id_b = ingestor_b.ingest("data", source="docs", metadata=None)
+
+    metadata_a = store_a.items[chunk_id_a]["metadata"]
+    metadata_b = store_b.items[chunk_id_b]["metadata"]
+    assert set(metadata_a.keys()) == set(metadata_b.keys())
+    assert metadata_a["source"] == metadata_b["source"]
+    assert metadata_a["questions"] == metadata_b["questions"]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "invalid_metadata",
+    [
+        {"note": None},
+        {"tags": ["a", "b"]},
+        {"nested": {"a": 1}},
+    ],
+)
+def test_ingest_raises_value_error_for_invalid_metadata_value(
+    invalid_metadata: dict,
+) -> None:
+    store = FakeMemoryStore()
+    ingestor = Ingestor(
+        memory_store=store, embed_fn=RecordingEmbedFn(), question_fn=None
+    )
+
+    with pytest.raises(ValueError, match=next(iter(invalid_metadata))):
+        ingestor.ingest("data", metadata=invalid_metadata)
+
+    # Nothing should have been written on failure.
+    assert store.items == {}
