@@ -28,7 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 ingestion = [
-    "mistune>=3.3.3",
+    "mistune>=3.3.4",
 ]
 
 [project.urls]
