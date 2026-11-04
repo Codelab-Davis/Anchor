@@ -43,7 +43,7 @@ where = ["src"]
 dev = [
     "pip-audit>=2.10.1",
     "pre-commit>=4.6.0",
-    "pytest>=9.1.1",
+    "pytest>=9.2.0",
 ]
 
 [tool.pytest.ini_options]
